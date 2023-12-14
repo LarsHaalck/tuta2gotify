@@ -13,8 +13,16 @@ pub struct Config {
 #[derive(Deserialize, Debug)]
 pub struct Gotify {
     pub url: url::Url,
-    pub token: String
+    pub token: String,
+    #[serde(default = "default_format")]
+    pub format: String,
 }
+
+fn default_format() -> String {
+    "New Mail from {{name}} <{{address}}>: {{subject}}\n{{body}}".to_string()
+}
+
+
 
 impl Config {
     pub fn read(config_file: std::path::PathBuf) -> Result<Config> {
