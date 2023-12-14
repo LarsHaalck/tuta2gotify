@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use anyhow::{Error, Result};
 use tracing::{debug, info};
-use tuta_relay::client::Client;
+use tuta_poll::client::Client;
 
 mod config;
 
