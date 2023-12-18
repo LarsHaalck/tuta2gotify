@@ -8,18 +8,15 @@ The tool doesn't persist a session and relays only unread mails from tuta to got
 tuta2gotify
 
 USAGE:
-    tuta2gotify
+    tuta2gotify [FLAGS] [OPTIONS]
 
 FLAGS:
     -h, --help       Prints help information
+        --test       Send test gotify message
     -V, --version    Prints version information
 
 OPTIONS:
     -c, --config <config-file>
-
-SUBCOMMANDS:
-    help      Prints this message or the help of the given subcommand(s)
-    verify    Wait for incoming device verifications
 ```
 
 ```bash

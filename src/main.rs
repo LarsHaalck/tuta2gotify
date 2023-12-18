@@ -16,7 +16,7 @@ struct Options {
     #[structopt(short = "c", long = "config")]
     config_file: Option<PathBuf>,
 
-    #[structopt(long)]
+    #[structopt(long, help = "Send test gotify message")]
     test: bool,
 }
 
