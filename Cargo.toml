@@ -1,9 +1,11 @@
 [package]
 name = "tuta2gotify"
 version = "0.1.0"
-description = "relay tutanota emails to gotify instance"
 edition = "2021"
+authors = ["Lars Haalck <github@larshaalck.de>"]
+description = "relay tutanota emails to gotify instance"
 repository = "https://github.com/LarsHaalck/tuta2gotify"
+license = "GPL-3.0-only"
 
 [dependencies]
 tuta_poll = { version = "0.1.0", path = "../tuta_poll" }
