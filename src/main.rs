@@ -1,10 +1,13 @@
 use anyhow::Result;
+use futures_util::pin_mut;
+use futures_util::StreamExt;
 use gotify::AppClient as GotifyClient;
 use handlebars::Handlebars;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use tracing::{info, warn};
+use tracing::{info, warn, debug};
 use tuta_poll::client::{Client, MailContent};
+use tuta_poll::types::ReadStatus;
 
 mod config;
 
@@ -26,6 +29,29 @@ fn format(handlebars: &Handlebars, mail: MailContent) -> Result<String> {
     )?)
 }
 
+async fn relay_mails(
+    client: &Client,
+    gotify_client: &GotifyClient,
+    handlebars: &Handlebars<'_>,
+) -> Result<()> {
+    let mails = client.get_mails();
+    pin_mut!(mails);
+    while let Some(mail) = mails.next().await {
+        let mut mail = mail?;
+        if mail.read_status == ReadStatus::Read {
+            continue;
+        }
+        info!("Relaying a new mail by: {:?}", mail.sender.address);
+        let decrypted_mail = client.decrypt(&mail).await?;
+        let _ = gotify_client
+            .create_message(format(&handlebars, decrypted_mail)?)
+            .await;
+        client.set_read_status(&mut mail, ReadStatus::Read).await?;
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
@@ -45,36 +71,19 @@ async fn main() -> Result<()> {
     let gotify_client: GotifyClient =
         gotify::Client::new(config.gotify.url.as_str(), &config.gotify.token)?;
 
-    let mails = client.get_mails().await?;
-    let num_mails = mails.len();
-    let mut unread_mails: Vec<_> = mails.into_iter().filter(|m| m.unread == "1").collect();
-    info!("Got {} mails, {} unread", num_mails, unread_mails.len());
-    for mail in &mut unread_mails {
-        if mail.unread == "0" {
-            continue;
-        }
-        let decrypted_mail = client.decrypt(&mail).await?;
-        let _ = gotify_client
-            .create_message(format(&handlebars, decrypted_mail)?)
-            .await;
-        client.mark_read(mail).await?;
-    }
-
+    relay_mails(&client, &gotify_client, &handlebars).await?;
     let webscoket_connector = client.get_websocket_connector()?;
 
     loop {
         let mut socket = webscoket_connector.connect()?;
-        while let Ok(mut mails) = socket.read_create().await {
-            for mail in &mut mails {
-                let decrypted_mail = client.decrypt(mail).await?;
-                let _ = gotify_client
-                    .create_message(format(&handlebars, decrypted_mail)?)
-                    .send()
-                    .await;
-                client.mark_read(mail).await?;
+        while let Ok(has_new) = socket.has_new().await {
+            if !has_new {
+                continue;
             }
+            debug!("Got new mails by websocket event");
+            relay_mails(&client, &gotify_client, &handlebars).await?;
         }
-        warn!("Error");
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        warn!("Socket error. Retrying in 10s");
+        std::thread::sleep(std::time::Duration::from_secs(10));
     }
 }
