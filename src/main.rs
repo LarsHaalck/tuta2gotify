@@ -15,6 +15,9 @@ mod config;
 struct Options {
     #[structopt(short = "c", long = "config")]
     config_file: Option<PathBuf>,
+
+    #[structopt(long)]
+    test: bool,
 }
 
 fn format(handlebars: &Handlebars, mail: MailContent) -> Result<String> {
@@ -70,6 +73,11 @@ async fn main() -> Result<()> {
     let client = Client::new(&config.account).await?;
     let gotify_client: GotifyClient =
         gotify::Client::new(config.gotify.url.as_str(), &config.gotify.token)?;
+
+    if options.test {
+        let _ = gotify_client.create_message("Test message").send().await?;
+        return Ok(());
+    }
 
     relay_mails(&client, &gotify_client, &handlebars).await?;
     let webscoket_connector = client.get_websocket_connector()?;
