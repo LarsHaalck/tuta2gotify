@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  tuta2gotify:
+    image: larshaalck/tuta2gotify:latest
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .t2g.env
