@@ -48,7 +48,8 @@ async fn relay_mails(
         let decrypted_mail = client.decrypt(&mail).await?;
         let _ = gotify_client
             .create_message(format(&handlebars, decrypted_mail)?)
-            .await;
+            .send()
+            .await?;
         client.set_read_status(&mut mail, ReadStatus::Read).await?;
     }
 
