@@ -8,7 +8,7 @@ repository = "https://github.com/LarsHaalck/tuta2gotify"
 license = "GPL-3.0-only"
 
 [dependencies]
-tuta_poll = { version = "0.1.0", path = "../tuta_poll" }
+tuta_poll = "0.1.0"
 anyhow = "1.0.75"
 dirs = "5.0.1"
 envy = "0.4.2"
